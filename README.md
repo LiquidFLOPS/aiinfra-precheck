@@ -71,6 +71,12 @@ modprobe nvidia-peermem
 ```
 GDRDMA can also be enabled by using the DMA-BUF feature of recent Linux kernels combined with the Open Source Nvidia GPU driver. In this case, NCCL will automatically detect and enable DMA-BUF so the nvidia-peermem module will not be necessary.
 
+Check whether GPUDirect RDMA (GDR) is enabled.
+
+```shell
+lsmod | grep ‘nvidia_peermem’
+```
+
 
 ### Enable GPU performance mode
 
