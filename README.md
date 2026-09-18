@@ -155,6 +155,34 @@ GPU 00000000:21:00.0
         HW Power Braking                  : 0 us
     Sparse Operation Mode                 : N/A
 ```
+### nvidia-smi nvlink -s
+
+The core diagnostic command for querying the status of NVLink high-speed interconnect links between GPUs.
+
+```shell
+nvidia-smi nvlink -s
+GPU 0: NVIDIA H100 80GB HBM3 (UUID: GPU-45d28163-13d4-3faf-7f68-7709c3f8f973)
+         Link 0: 26.562 GB/s
+         Link 1: 26.562 GB/s
+         Link 2: 26.562 GB/s
+         Link 3: 26.562 GB/s
+         Link 4: 26.562 GB/s
+         Link 5: 26.562 GB/s
+         Link 6: 26.562 GB/s
+         Link 7: 26.562 GB/s
+         Link 8: 26.562 GB/s
+         Link 9: 26.562 GB/s
+         Link 10: 26.562 GB/s
+         Link 11: 26.562 GB/s
+         Link 12: 26.562 GB/s
+         Link 13: 26.562 GB/s
+         Link 14: 26.562 GB/s
+         Link 15: 26.562 GB/s
+         Link 16: 26.562 GB/s
+         Link 17: 26.562 GB/s
+```
+Ensure each GPU has the expected number of NVLink links (18 for H100) and that each link runs at the maximum speed (26.562 GB/s). Insufficient link count or degraded link speed will reduce inter-GPU communication bandwidth and impact multi-GPU training performance.
+
 ### Check NVRM(NVIDIA Resource Manager) log
 
 ```shell
