@@ -84,6 +84,20 @@ lsmod | grep ‘nvidia_peermem’
 nvidia-smi -pm 1
 ```
 
+Check if persistence mode is enabled for all GPUs.
+
+```shell
+nvidia-smi -q | grep "Persistence Mode"
+Persistence Mode                      : Enabled
+Persistence Mode                      : Enabled
+Persistence Mode                      : Enabled
+Persistence Mode                      : Enabled
+Persistence Mode                      : Enabled
+Persistence Mode                      : Enabled
+Persistence Mode                      : Enabled
+Persistence Mode                      : Enabled
+```
+
 ### Check NVRM(NVIDIA Resource Manager) log
 ```shell
 dmesg -T | grep -i "nvrm"
