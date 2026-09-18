@@ -121,7 +121,40 @@ Legend:
   NS   = Not supported
   U    = Unknown
 ```
+### Check GPU performance status and throttling details
 
+Detect whether the GPU triggers throttling due to high temperature, power limit, or other reasons. 
+
+A Slowdown state of Active indicates the GPU is protecting itself by throttling, which directly slows down training.
+
+```shell
+ ==============NVSMI LOG==============
+
+Timestamp                                 : Fri Sep 18 15:34:02 2026
+Driver Version                            : 580.65.06
+CUDA Version                              : 13.0
+
+Attached GPUs                             : 8
+GPU 00000000:21:00.0
+    Performance State                     : P0
+    Clocks Event Reasons
+        Idle                              : Active
+        Applications Clocks Setting       : Not Active
+        SW Power Cap                      : Not Active
+        HW Slowdown                       : Not Active
+            HW Thermal Slowdown           : Not Active
+            HW Power Brake Slowdown       : Not Active
+        Sync Boost                        : Not Active
+        SW Thermal Slowdown               : Not Active
+        Display Clock Setting             : Not Active
+    Clocks Event Reasons Counters
+        SW Power Capping                  : 0 us
+        Sync Boost                        : 0 us
+        SW Thermal Slowdown               : 0 us
+        HW Thermal Slowdown               : 0 us
+        HW Power Braking                  : 0 us
+    Sparse Operation Mode                 : N/A
+```
 ### Check NVRM(NVIDIA Resource Manager) log
 
 ```shell
