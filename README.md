@@ -55,6 +55,13 @@ for BDF in `lspci -d "*:*:*" | awk '{print $1}'`; do
     fi
 done
 ```
+Check whether ACS (Access Control Services) is enabled on PCIe devices
+
+```shell
+lspci -vvv | grep ACSCtl | grep -c "SrcValid+"
+# 0 = ACS disabled
+# >0 = ACS enabled
+```
 
 ### GPU-to-NIC communication
 GPUs can also communicate directly with network cards using GPU Direct RDMA (GDRDMA). This requires having a compatible network cards and drivers, plus loading an extra kernel module called nvidia-peermem. The nvidia-peermem module is now supplied with the CUDA drivers, however it must be loaded on each node boot with:
