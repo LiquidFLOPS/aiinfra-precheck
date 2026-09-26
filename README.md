@@ -101,6 +101,7 @@ Persistence Mode                      : Enabled
 To verify whether the Peer-to-Peer (P2P) communication topology among GPUs is complete. OK indicates that direct communication between two GPUs is supported. Ideally, all GPUs within the same node should display OK.
 
 ```shell
+nvidia-smi topo -p2p r
         GPU0    GPU1    GPU2    GPU3    GPU4    GPU5    GPU6    GPU7
  GPU0   X       OK      OK      OK      OK      OK      OK      OK
  GPU1   OK      X       OK      OK      OK      OK      OK      OK
@@ -182,6 +183,24 @@ GPU 0: NVIDIA H100 80GB HBM3 (UUID: GPU-45d28163-13d4-3faf-7f68-7709c3f8f973)
          Link 17: 26.562 GB/s
 ```
 Ensure each GPU has the expected number of NVLink links (18 for H100) and that each link runs at the maximum speed (26.562 GB/s). Insufficient link count or degraded link speed will reduce inter-GPU communication bandwidth and impact multi-GPU training performance.
+
+### Check nvidia-smi topo 
+
+| Connection Type     | Meaning                                                                                                                  | NCCL Performance Impact                                                                 |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------- |
+| `NV#` (NV1/NV2/NV4) | Connected via **NVLink**. The number indicates the NVLink generation or number of links (e.g., NV4 = 4 links or 4th gen) | ✅ **Best performance**. High bandwidth and low latency. Preferred by NCCL.              |
+| `PIX`               | Peer-to-peer over PCIe on the **same switch**                                                                            | 🟡 Fairly good. Slower than NVLink. Bandwidth limited by PCIe switch.                   |
+| `PXB`               | Peer-to-peer over PCIe via **different switches**                                                                        | 🟠 Moderate performance. Slower than PIX. May involve host PCIe root complex traversal. |
+| `PHB`               | Peer-to-peer via **PCIe Host Bridge** (e.g., across CPU sockets)                                                         | 🔴 Poor performance. Typically cross-NUMA. Higher latency and lower bandwidth.          |
+| `NODE`              | GPUs are on **different NUMA nodes**                                                                                     | 🔴 Even worse latency. Usually combined with PHB. Major NCCL bottleneck.                |
+| `SYS`               | Communication across systems (e.g., no direct connection, via network)                                                   | ❌ **Worst performance**. Indicates no suitable direct path. Avoid for NCCL.             |
+
+example A800 
+
+```shell
+nvidia-smi topo -m 
+```
+![topo](A800-topo.jpeg)
 
 ### Check NVRM(NVIDIA Resource Manager) log
 
@@ -278,23 +297,7 @@ MLX Number: mlx5_105            LnkSta: Speed 16GT/s (ok), Width x16 (ok)
 MLX Number: mlx5_100            LnkSta: Speed 16GT/s (ok), Width x16 (ok)
 ```
 
-### Check nvidia-smi topo 
 
-| Connection Type     | Meaning                                                                                                                  | NCCL Performance Impact                                                                 |
-| ------------------- | ------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------- |
-| `NV#` (NV1/NV2/NV4) | Connected via **NVLink**. The number indicates the NVLink generation or number of links (e.g., NV4 = 4 links or 4th gen) | ✅ **Best performance**. High bandwidth and low latency. Preferred by NCCL.              |
-| `PIX`               | Peer-to-peer over PCIe on the **same switch**                                                                            | 🟡 Fairly good. Slower than NVLink. Bandwidth limited by PCIe switch.                   |
-| `PXB`               | Peer-to-peer over PCIe via **different switches**                                                                        | 🟠 Moderate performance. Slower than PIX. May involve host PCIe root complex traversal. |
-| `PHB`               | Peer-to-peer via **PCIe Host Bridge** (e.g., across CPU sockets)                                                         | 🔴 Poor performance. Typically cross-NUMA. Higher latency and lower bandwidth.          |
-| `NODE`              | GPUs are on **different NUMA nodes**                                                                                     | 🔴 Even worse latency. Usually combined with PHB. Major NCCL bottleneck.                |
-| `SYS`               | Communication across systems (e.g., no direct connection, via network)                                                   | ❌ **Worst performance**. Indicates no suitable direct path. Avoid for NCCL.             |
-
-example A800 
-
-```shell
-nvidia-smi topo -m 
-```
-![topo](A800-topo.jpeg)
 
 ### Check lstopo (PCIe topo) 
 apt install -y hwloc 
