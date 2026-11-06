@@ -1,6 +1,6 @@
-# nccl-precheck
+# aiinfa-precheck
 
-Pre-check for NCCL Test
+A comprehensive AI infrastructure preflight checklist for GPU cluster health validation, NCCL communication troubleshooting, slow-node detection, and distributed training performance diagnosis.
 
 
 ## GPU
