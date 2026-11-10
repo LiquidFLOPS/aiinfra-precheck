@@ -1,3 +1,55 @@
+### Check GPU Driver Status
+
+**Purpose**
+
+Verify that the NVIDIA GPU driver is properly loaded and initialized, and that all GPU devices are accessible through the driver.
+
+**Command**
+
+```bash
+# Check NVIDIA driver version
+cat /proc/driver/nvidia/version
+
+# Check NVIDIA kernel modules
+lsmod | grep '^nvidia'
+
+# Check GPU accessibility and driver status
+nvidia-smi
+
+# Check NVIDIA driver initialization errors
+journalctl -k --since "24 hours ago" --no-pager \
+  | grep -iE 'NVRM|nvidia.*(failed|error|failure)'
+```
+
+**Expected Result**
+
+- NVIDIA kernel modules are successfully loaded.
+- NVIDIA driver version is correctly reported.
+- `nvidia-smi` executes successfully and detects all expected GPU devices.
+- No unexpected NVIDIA driver loading or initialization errors are reported in kernel logs.
+
+**Abnormal Symptoms**
+
+- NVIDIA kernel modules are missing or fail to load.
+- `nvidia-smi` reports `NVIDIA-SMI has failed because it couldn't communicate with the NVIDIA driver`.
+- `nvidia-smi` reports `Failed to initialize NVML`.
+- GPU devices are detected by PCIe but are not accessible through the NVIDIA driver.
+- NVIDIA driver initialization failures appear in kernel logs.
+- Driver API version mismatch or kernel module version mismatch occurs.
+- NVIDIA driver fails to load after a kernel upgrade or system reboot.
+
+**Troubleshooting**
+
+- Check NVIDIA kernel module status using `lsmod` and `modinfo nvidia`.
+- Inspect kernel logs using `journalctl -k` and `dmesg` for NVIDIA driver loading and initialization errors.
+- Verify NVIDIA driver installation and version using `nvidia-smi` and `/proc/driver/nvidia/version`.
+- Check whether the NVIDIA kernel module matches the running kernel version.
+- If the driver module fails to load, use `dkms status` to verify the DKMS compilation status and kernel headers.
+- Check Secure Boot and kernel module signing if module loading is rejected.
+- Check for NVIDIA driver version mismatches between the kernel module and user-space libraries.
+- Verify GPU PCIe enumeration using `lspci`.
+- Reinstall or reload the NVIDIA driver only after confirming the root cause and coordinating with workload owners.
+
 ### Check GPU Device Count
 
 **Purpose**
