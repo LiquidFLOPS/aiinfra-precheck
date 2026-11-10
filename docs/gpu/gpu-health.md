@@ -275,3 +275,67 @@ Pay attention to the following Clocks Event Reasons:
 - `SW Power Cap: Active` does not necessarily indicate a hardware fault. It may simply mean the GPU has reached its configured power limit.
 - Evaluate throttling status under actual training workloads rather than relying only on idle-state snapshots.
 - Performance State and clock event reasons may vary depending on GPU architecture, driver version, workload, and power configuration.
+
+### Check GPU ECC Errors and Memory Remapping
+
+**Purpose**
+
+Detect GPU memory ECC errors, including Single-bit ECC (SBE) and Double-bit ECC (DBE), and identify potential GPU memory hardware failures.
+
+Monitor GPU memory remapping status to determine whether faulty memory locations can be successfully recovered by hardware.
+
+**Command**
+
+```bash
+# Check ECC errors and GPU memory remapping status
+nvidia-smi -q -d ECC,ROW_REMAPPER
+
+# Quick check: identify GPU memory remapping failures
+nvidia-smi -q | grep -i "Remapping Failure Occurred"
+```
+
+**Expected Result**
+
+- Single-bit and Double-bit ECC error counters should be monitored for unexpected increases.
+- No unexpected Double-bit ECC errors should be detected.
+- GPU memory remapping should complete successfully.
+- `Remapping Failure Occurred` should report `No` on all supported GPUs.
+- No unexpected pending memory remapping operations should remain.
+
+Pay special attention to the following metrics:
+
+| Metric | Description |
+|---|---|
+| Single Bit ECC | Correctable single-bit memory errors. |
+| Double Bit ECC | Uncorrectable double-bit memory errors. |
+| Correctable Error | Active GPU memory row remappings caused by correctable ECC errors. |
+| Uncorrectable Error | Active GPU memory row remappings caused by uncorrectable ECC errors. |
+| Pending | Indicates whether a memory row is pending remapping. A GPU reset is required for the remapping to take effect. |
+| Remapping Failure Occurred | Indicates whether a GPU memory row remapping failure has occurred. |
+
+**Abnormal Symptoms**
+
+- Single-bit ECC error counters increase repeatedly.
+- Double-bit ECC errors are detected.
+- GPU memory row remapping fails.
+- `Remapping Failure Occurred` reports `Yes`.
+- GPU memory remapping operations remain pending.
+- Uncorrectable ECC errors cause GPU applications to terminate unexpectedly.
+
+**Troubleshooting**
+
+- Check detailed ECC error counters using `nvidia-smi -q -d ECC`.
+- Check GPU memory remapping status using `nvidia-smi -q -d ROW_REMAPPER`.
+- Identify the affected GPU using its GPU index, UUID, and PCI Bus ID.
+- For Single-bit ECC errors, monitor error counters and check whether they continue to increase.
+- For Double-bit ECC errors, inspect GPU memory health and check whether page retirement or row remapping has occurred.
+- If memory remapping is pending, drain the affected GPU from workloads and perform a GPU reset or node reboot during a maintenance window.
+- If `Remapping Failure Occurred` reports `Yes`, the affected GPU meets the cluster's hardware replacement criteria. Drain the node and arrange GPU replacement.
+- Collect NVIDIA Field Diagnostics and hardware logs for further investigation and vendor RMA processing.
+
+**Note**
+
+- Single-bit ECC errors are automatically corrected by hardware and do not necessarily indicate GPU hardware failure.
+- Double-bit ECC errors are uncorrectable and require further investigation.
+- A `Remapping Failure Occurred: Yes` status should be treated as a GPU replacement trigger according to the cluster maintenance policy.
+- Do not confuse `Pending: Yes` with `Remapping Failure Occurred: Yes`. Pending indicates that a remapping operation requires a GPU reset to take effect, not necessarily a hardware replacement.
