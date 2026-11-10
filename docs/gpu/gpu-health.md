@@ -205,3 +205,73 @@ XID severity and recovery behavior may vary depending on GPU architecture, drive
 References:
 - https://docs.nvidia.com/deploy/xid-errors/latest/index.html
 - https://docs.nvidia.com/deploy/gpu-debug-guidelines/index.html
+
+### Check GPU Performance State and Throttling
+
+**Purpose**
+
+Detect whether GPUs experience performance degradation or clock throttling due to high temperature, power limits, external power issues, or other hardware protection mechanisms.
+
+GPU throttling may reduce GPU operating clocks and directly impact model training performance.
+
+**Command**
+
+```bash
+# Check GPU performance state and clock event reasons
+nvidia-smi -q -d PERFORMANCE
+
+# Check GPU temperature, power consumption, and power limits
+nvidia-smi -q -d TEMPERATURE,POWER
+
+# Query key GPU performance metrics
+nvidia-smi --query-gpu=index,pstate,temperature.gpu,power.draw,power.limit,utilization.gpu --format=csv
+```
+
+**Expected Result**
+
+- GPU Performance State should be consistent with the current workload. P0 is typically expected under intensive GPU workloads.
+- No unexpected hardware or software thermal slowdown should be active.
+- No unexpected hardware power brake events should be detected.
+- GPU temperature should remain within the recommended operating range.
+- GPU power consumption and clock frequencies should be consistent with the workload and configured power limits.
+
+Pay attention to the following Clocks Event Reasons:
+
+| Event Reason | Description |
+|---|---|
+| Idle | GPU is idle and clocks are reduced. Normal when no workload is running. |
+| SW Power Cap | GPU clocks are limited by the configured software power limit. |
+| HW Slowdown | Hardware slowdown is engaged due to thermal or power protection. |
+| HW Thermal Slowdown | GPU clocks are reduced due to excessive temperature. |
+| HW Power Brake Slowdown | External power brake is triggered, for example by the system power supply. |
+| SW Thermal Slowdown | Software thermal management reduces GPU clocks due to high temperature. |
+| Sync Boost | GPU clocks are limited by the lowest clock frequency within a Sync Boost group. |
+
+**Abnormal Symptoms**
+
+- HW Thermal Slowdown is `Active`.
+- SW Thermal Slowdown is `Active` during intensive workloads.
+- HW Power Brake Slowdown is `Active`.
+- HW Slowdown is `Active`, indicating hardware protection is reducing GPU clocks.
+- SW Power Cap is unexpectedly active and limits GPU performance.
+- GPU remains in a low-performance state during intensive training workloads.
+- GPU temperature approaches or exceeds the maximum operating temperature.
+- GPU clock frequencies are significantly lower than expected under comparable workloads.
+
+**Troubleshooting**
+
+- Check GPU performance state, clock event reasons, and throttling counters using `nvidia-smi -q -d PERFORMANCE`.
+- Check GPU temperature, fan status, and power consumption using `nvidia-smi -q -d TEMPERATURE,POWER`.
+- For thermal slowdown, inspect server cooling systems, airflow, fan operation, heatsinks, and rack inlet temperature.
+- For power limit issues, compare actual power consumption against the configured GPU power limit.
+- For hardware power brake events, inspect server power supplies, power connections, and system power delivery.
+- Check GPU application clock settings and Sync Boost configuration.
+- Compare GPU clock frequencies, temperatures, and power consumption with healthy nodes running similar workloads.
+- Investigate recurring throttling events and collect NVIDIA diagnostic logs if hardware or cooling failures are suspected.
+
+**Note**
+
+- `Idle: Active` is normal when no GPU workload is running and should not be treated as a throttling failure.
+- `SW Power Cap: Active` does not necessarily indicate a hardware fault. It may simply mean the GPU has reached its configured power limit.
+- Evaluate throttling status under actual training workloads rather than relying only on idle-state snapshots.
+- Performance State and clock event reasons may vary depending on GPU architecture, driver version, workload, and power configuration.
