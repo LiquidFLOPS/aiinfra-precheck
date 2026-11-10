@@ -78,7 +78,7 @@ lsmod | grep ‘nvidia_peermem’
 ```
 
 
-### Enable GPU performance mode
+### Enable GPU persistence mode
 
 ```shell
 nvidia-smi -pm 1
