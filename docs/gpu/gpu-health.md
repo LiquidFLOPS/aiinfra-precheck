@@ -61,3 +61,95 @@ The Persistence Mode status should be consistent across all GPUs and match the c
 - Check NVIDIA driver status and initialization errors.
 - Check whether `nvidia-persistenced` is running, if used by the platform.
 - Verify Persistence Mode configuration after node reboot.
+
+### Check GPU XID Errors
+
+**Purpose**
+
+Detect GPU-related errors reported by the NVIDIA driver and identify potential application, GPU hardware, PCIe, NVLink, ECC, and driver/firmware issues.
+
+**Command**
+
+```bash
+journalctl -k --since "24 hours ago" --no-pager \
+  | grep -E 'NVRM: Xid'
+```
+
+Alternatively, check kernel logs:
+
+```bash
+dmesg -T | grep -i 'NVRM: Xid'
+```
+
+**Expected Result**
+
+No unexpected GPU XID errors should be reported during the inspection period.
+
+Pay attention to the following XID errors:
+
+| XID | Description | Recommended Handling |
+|---|---|---|
+| 13 | Graphics Engine Exception | Usually application-related. Investigate CUDA application errors. |
+| 31 | GPU Memory Page Fault | Usually caused by illegal memory access. Check application code and CUDA errors. |
+| 32 | Invalid or corrupted push buffer stream | Check PCIe link quality and hardware connectivity. |
+| 38 | Driver firmware error | Investigate NVIDIA driver and firmware compatibility. |
+| 43 | GPU stopped processing | Usually a software-induced application fault. GPU generally remains healthy. |
+| 45 | Preemptive channel removal | Often caused by application termination or previous GPU errors. Check preceding XID events. |
+| 48 | Double Bit ECC Error (DBE) | Uncorrectable ECC error. GPU reset or node reboot may be required. |
+| 61 | Internal micro-controller breakpoint/warning | Verify GPU architecture and driver-specific XID documentation. |
+| 62 | Internal micro-controller halt | Investigate GPU internal errors. GPU reset may be required. |
+| 63 | ECC page retirement or row remapping event | Check GPU memory error and row remapping status. |
+| 64 | ECC page retirement or row remapping failure | Investigate GPU memory errors. GPU reset and hardware diagnostics may be required. |
+| 68 | NVDEC exception | Investigate the affected application and video decoding engine. |
+| 74 | NVLink error | Check NVLink connections, NVSwitch, and remote GPU health. |
+| 79 | GPU has fallen off the bus | Investigate PCIe connectivity, GPU hardware, power, and driver issues. |
+| 92 | High single-bit ECC error rate | Monitor ECC error counters and investigate potential hardware issues. |
+| 94 | Contained memory error | Error is isolated to one application. Restart the affected application. |
+| 95 | Uncontained memory error | Multiple applications may be affected. GPU reset is required before restarting workloads. |
+| 120 | GSP error | Investigate GSP firmware/driver errors. GPU reset or node power cycle may be required. |
+
+**Abnormal Symptoms**
+
+- Unexpected XID errors are reported in kernel logs.
+- Repeated XID errors occur on the same GPU.
+- GPU becomes unavailable or inaccessible.
+- ECC errors or GPU memory remapping failures are detected.
+- PCIe or NVLink connectivity errors affect GPU communication.
+- GPU workloads terminate unexpectedly or experience performance degradation.
+
+**Troubleshooting**
+
+For application-related XID errors (13, 31, 43, 45, 68):
+
+1. Resubmit the workload and observe whether the XID errors disappear.
+2. If the errors persist, inspect application logs and CUDA code to identify potential user-code issues.
+3. Use CUDA debugging tools such as Compute Sanitizer or cuda-gdb when necessary.
+4. If application code is confirmed to be correct, contact the operations team for further investigation.
+
+For hardware, interconnect, ECC, and driver-related XID errors:
+
+- **XID 32:** Inspect PCIe link speed, width, PCIe AER logs, slots, and risers.
+- **XID 38:** Check NVIDIA driver and GPU firmware compatibility.
+- **XID 48:** Check ECC error counters using `nvidia-smi -q -d ECC`. GPU reset or node reboot may be required.
+- **XID 61/62:** Inspect GPU internal errors and NVIDIA driver logs. Follow the XID handling guidance for the specific GPU and driver version.
+- **XID 63/64:** Check ECC page retirement or row remapping status using `nvidia-smi -q`.
+- **XID 74:** Inspect NVLink status using `nvidia-smi nvlink -s`. Check the connected GPU and NVSwitch health.
+- **XID 79:** Inspect PCIe AER logs, GPU PCIe connectivity, power connections, slots, and risers.
+- **XID 92:** Monitor single-bit ECC error counters and investigate repeated errors.
+- **XID 94/95:** Identify affected applications. Restart the affected application for XID 94; perform a GPU reset before restarting workloads for XID 95.
+- **XID 120:** Check NVIDIA driver and GSP-related logs. Consider GPU reset or node power cycle if the error persists.
+
+If critical errors persist or hardware failure is suspected:
+
+1. Drain the affected node from new workloads.
+2. Coordinate with workload owners before stopping or resetting GPU processes.
+3. Collect kernel logs, GPU diagnostics, and hardware information.
+4. Contact the operations team or hardware vendor for further investigation and repair.
+
+**Note**
+
+XID severity and recovery behavior may vary depending on GPU architecture, driver version, and firmware version. Always refer to the corresponding NVIDIA XID documentation before performing recovery operations.
+
+References:
+- https://docs.nvidia.com/deploy/xid-errors/latest/index.html
+- https://docs.nvidia.com/deploy/gpu-debug-guidelines/index.html
