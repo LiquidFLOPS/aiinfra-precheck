@@ -1,4 +1,4 @@
-# aiinfa-precheck
+# AI Infra Precheck
 
 A comprehensive AI infrastructure preflight checklist for GPU cluster health validation, NCCL communication troubleshooting, slow-node detection, and distributed training performance diagnosis.
 
